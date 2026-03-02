@@ -126,6 +126,7 @@ type Pattern
     | PString String
     | PInt Int
     | PFloat Float
+    | PConstructor { qualifiedness : PossiblyQualified, name : VarName } (List LocatedPattern)
 
 
 {-| A helper for the [Transform](/packages/Janiczek/transform/latest/) library.
@@ -385,3 +386,6 @@ unwrapPattern expr =
 
         PFloat float ->
             Unwrapped.PFloat float
+
+        PConstructor rec subPatterns ->
+            Unwrapped.PConstructor rec (List.map unwrapPattern subPatterns)

@@ -40,6 +40,7 @@ type Value
     | VTuple3 Value Value Value
     | VRecord (Dict String Value)
     | VClosure { argument : String, body : Typed.LocatedExpr, env : Env }
+    | VConstructor { module_ : String, name : String, args : List Value }
     | VBuiltinFunction (Value -> Result EvalError Value)
 
 
@@ -188,7 +189,7 @@ evalConstructor module_ name =
         Ok (VBool False)
 
     else
-        Err (TypeError ("Unknown constructor: " ++ module_ ++ "." ++ name))
+        Ok (VConstructor { module_ = module_, name = name, args = [] })
 
 
 applyFunction : Value -> Value -> Result EvalError Value
@@ -199,6 +200,9 @@ applyFunction fnVal argVal =
 
         VBuiltinFunction fn ->
             fn argVal
+
+        VConstructor { module_, name, args } ->
+            Ok (VConstructor { module_ = module_, name = name, args = args ++ [ argVal ] })
 
         _ ->
             Err (TypeError "Attempted to call a non-function")
@@ -379,3 +383,30 @@ matchPattern value pattern =
         PAlias innerPat name ->
             matchPattern value (getPattern innerPat)
                 |> Maybe.map (Dict.insert name value)
+
+        PConstructor { name } subPatterns ->
+            case value of
+                VConstructor ctor ->
+                    if ctor.name == name && List.length ctor.args == List.length subPatterns then
+                        List.map2 (\v p -> matchPattern v (getPattern p)) ctor.args subPatterns
+                            |> List.foldr (Maybe.map2 Dict.union) (Just Dict.empty)
+
+                    else
+                        Nothing
+
+                VBool True ->
+                    if name == "True" && List.isEmpty subPatterns then
+                        Just Dict.empty
+
+                    else
+                        Nothing
+
+                VBool False ->
+                    if name == "False" && List.isEmpty subPatterns then
+                        Just Dict.empty
+
+                    else
+                        Nothing
+
+                _ ->
+                    Nothing

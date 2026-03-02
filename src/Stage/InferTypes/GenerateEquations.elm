@@ -683,6 +683,22 @@ generatePatternEquations currentId located =
             , currentId
             )
 
+        Typed.PConstructor _ subPatterns ->
+            let
+                ( subEquations, newId ) =
+                    List.foldl
+                        (\subPat ( acc, runningId ) ->
+                            let
+                                ( equations, nextId ) =
+                                    generatePatternEquations runningId subPat
+                            in
+                            ( acc ++ equations, nextId )
+                        )
+                        ( [], currentId )
+                        subPatterns
+            in
+            ( subEquations, newId )
+
 
 generateEquationsAcrossDeclarations : Environment -> List TypeEquation
 generateEquationsAcrossDeclarations env =

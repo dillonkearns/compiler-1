@@ -88,6 +88,10 @@ valueToString value =
                     )
                 ++ "}"
 
+        VConstructor { module_, name, args } ->
+            "VConstructor " ++ module_ ++ "." ++ name
+                ++ " [" ++ String.join ", " (List.map valueToString args) ++ "]"
+
         VClosure _ ->
             "VClosure <closure>"
 
@@ -377,6 +381,54 @@ suite =
                         )
                         |> evalExpr Dict.empty
                         |> expectOk (VInt 42)
+            ]
+
+        -- Custom type constructors
+        , describe "Custom type constructors"
+            [ test "Nothing evaluates to VConstructor" <|
+                \() ->
+                    located
+                        ( ConstructorValue { module_ = "", name = "Nothing" }
+                        , Id 0
+                        )
+                        |> evalExpr Dict.empty
+                        |> expectOk (VConstructor { module_ = "", name = "Nothing", args = [] })
+            , test "Just 42 evaluates to VConstructor with arg" <|
+                \() ->
+                    located
+                        ( Call
+                            { fn =
+                                located
+                                    ( ConstructorValue { module_ = "", name = "Just" }
+                                    , Id 0
+                                    )
+                            , argument = typedInt 42
+                            }
+                        , Id 1
+                        )
+                        |> evalExpr Dict.empty
+                        |> expectOk (VConstructor { module_ = "", name = "Just", args = [ VInt 42 ] })
+            , test "case with PConstructor matches VConstructor" <|
+                \() ->
+                    located
+                        ( Case
+                            (located
+                                ( ConstructorValue { module_ = "", name = "Nothing" }
+                                , Id 0
+                                )
+                            )
+                            ( { pattern = locatedPattern ( PConstructor { module_ = "", name = "Nothing" } [], Id 1 )
+                              , body = typedInt 0
+                              }
+                            , [ { pattern = locatedPattern ( PAnything, Id 2 )
+                                , body = typedInt 99
+                                }
+                              ]
+                            )
+                        , Type Type.Int
+                        )
+                        |> evalExpr Dict.empty
+                        |> expectOk (VInt 0)
             ]
 
         -- Cycle 10: Built-in arithmetic via pluggable env

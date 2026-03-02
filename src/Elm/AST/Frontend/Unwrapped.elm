@@ -59,3 +59,4 @@ type Pattern
     | PString String
     | PInt Int
     | PFloat Float
+    | PConstructor { qualifiedness : PossiblyQualified, name : VarName } (List Pattern)

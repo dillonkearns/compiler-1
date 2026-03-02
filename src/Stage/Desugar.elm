@@ -329,6 +329,11 @@ desugarPattern located =
         Frontend.PFloat float ->
             return <| Canonical.PFloat float
 
+        Frontend.PConstructor rec subPatterns ->
+            List.map f subPatterns
+                |> List.foldr (Result.map2 (::)) (Ok [])
+                |> map (\pats -> Canonical.PConstructor { module_ = "", name = rec.name } pats)
+
 
 desugarQualifiedness :
     Dict ModuleName (Module Frontend.LocatedExpr TypeAnnotation PossiblyQualified)

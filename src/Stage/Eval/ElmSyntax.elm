@@ -610,8 +610,27 @@ convertPattern (Node _ pat) =
         SynPat.ParenthesizedPattern inner ->
             convertPattern inner
 
-        SynPat.NamedPattern _ _ ->
-            Err "Constructor patterns not yet supported"
+        SynPat.NamedPattern { moduleName, name } argPatterns ->
+            let
+                module_ =
+                    if List.isEmpty moduleName then
+                        case name of
+                            "True" ->
+                                "Basics"
+
+                            "False" ->
+                                "Basics"
+
+                            _ ->
+                                ""
+
+                    else
+                        String.join "." moduleName
+            in
+            argPatterns
+                |> List.map convertPattern
+                |> combineResults
+                |> Result.map (\pats -> locPat (Typed.PConstructor { module_ = module_, name = name } pats))
 
 
 combineResults : List (Result x a) -> Result x (List a)

@@ -59,3 +59,4 @@ type Pattern
     | PString String
     | PInt Int
     | PFloat Float
+    | PConstructor { module_ : ModuleName, name : VarName } (List Pattern)

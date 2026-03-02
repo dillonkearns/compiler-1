@@ -65,6 +65,10 @@ valueToString value =
                     )
                 ++ "}"
 
+        VConstructor { module_, name, args } ->
+            "VConstructor " ++ module_ ++ "." ++ name
+                ++ " [" ++ String.join ", " (List.map valueToString args) ++ "]"
+
         VClosure _ ->
             "VClosure <closure>"
 
@@ -257,6 +261,32 @@ suite =
             , test "record destructuring" <|
                 \() ->
                     evalString "case { x = 1 } of\n  { x } -> x"
+                        |> expectOk (VInt 1)
+            ]
+        , describe "Custom type constructors"
+            [ test "Just 1 evaluates to VConstructor" <|
+                \() ->
+                    evalString "Just 1"
+                        |> expectOk (VConstructor { module_ = "", name = "Just", args = [ VInt 1 ] })
+            , test "Nothing evaluates to VConstructor" <|
+                \() ->
+                    evalString "Nothing"
+                        |> expectOk (VConstructor { module_ = "", name = "Nothing", args = [] })
+            , test "Bool constructor pattern: case True of True -> 1; False -> 0" <|
+                \() ->
+                    evalString "case True of\n  True -> 1\n  False -> 0"
+                        |> expectOk (VInt 1)
+            , test "Constructor pattern match: case Just 1 of Just n -> n; Nothing -> 0" <|
+                \() ->
+                    evalString "case Just 1 of\n  Just n -> n\n  Nothing -> 0"
+                        |> expectOk (VInt 1)
+            , test "Constructor fallthrough: case Nothing of Just n -> n; Nothing -> 0" <|
+                \() ->
+                    evalString "case Nothing of\n  Just n -> n\n  Nothing -> 0"
+                        |> expectOk (VInt 0)
+            , test "Nested constructor: case Just (Just 1) of Just (Just n) -> n; _ -> 0" <|
+                \() ->
+                    evalString "case Just (Just 1) of\n  Just (Just n) -> n\n  _ -> 0"
                         |> expectOk (VInt 1)
             ]
         , describe "String and List operators"

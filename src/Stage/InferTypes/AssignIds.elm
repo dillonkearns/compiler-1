@@ -410,3 +410,21 @@ assignPatternIdsHelp currentId located =
 
         Canonical.PFloat float ->
             assignId currentId (Typed.PFloat float)
+
+        Canonical.PConstructor rec subPatterns ->
+            let
+                ( subPatterns_, newId ) =
+                    List.foldr
+                        (\item ( acc, runningId ) ->
+                            let
+                                ( item_, nextId ) =
+                                    f runningId item
+                            in
+                            ( item_ :: acc
+                            , nextId
+                            )
+                        )
+                        ( [], currentId )
+                        subPatterns
+            in
+            assignId newId (Typed.PConstructor rec subPatterns_)

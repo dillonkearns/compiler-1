@@ -113,6 +113,7 @@ type Pattern_
     | PString String
     | PInt Int
     | PFloat Float
+    | PConstructor { module_ : ModuleName, name : VarName } (List LocatedPattern)
 
 
 {-| A helper for the [Transform](/packages/Janiczek/transform/latest/) library.
@@ -485,6 +486,9 @@ unwrapPattern expr =
 
         PFloat float ->
             Unwrapped.PFloat float
+
+        PConstructor rec subPatterns ->
+            Unwrapped.PConstructor rec (List.map unwrapPattern subPatterns)
     , type_
     )
 
@@ -638,4 +642,7 @@ dropPatternTypes locatedPattern =
 
                     PFloat float ->
                         Canonical.PFloat float
+
+                    PConstructor rec subPatterns ->
+                        Canonical.PConstructor rec (List.map f subPatterns)
             )

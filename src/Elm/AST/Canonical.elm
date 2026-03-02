@@ -108,6 +108,7 @@ type Pattern
     | PString String
     | PInt Int
     | PFloat Float
+    | PConstructor { module_ : ModuleName, name : VarName } (List LocatedPattern)
 
 
 {-| Discard the [location metadata](Elm.Data.Located#Located).
@@ -262,6 +263,9 @@ unwrapPattern expr =
 
         PFloat float ->
             Unwrapped.PFloat float
+
+        PConstructor rec subPatterns ->
+            Unwrapped.PConstructor rec (List.map f subPatterns)
 
 
 {-| Adds [**dummy** locations](Elm.Data.Located#dummyRegion) to the [Unwrapped.Expr](Elm.AST.Canonical.Unwrapped#Expr).
@@ -418,3 +422,6 @@ fromUnwrappedPattern pattern =
 
             Unwrapped.PFloat float ->
                 PFloat float
+
+            Unwrapped.PConstructor rec subPatterns ->
+                PConstructor rec (List.map f subPatterns)
