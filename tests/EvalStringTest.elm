@@ -72,53 +72,6 @@ valueToString value =
             "VBuiltinFunction <function>"
 
 
-
--- Basics environment with arithmetic builtins
-
-
-intBinOp : (Int -> Int -> Int) -> Value
-intBinOp op =
-    VBuiltinFunction
-        (\a ->
-            case a of
-                VInt x ->
-                    Ok
-                        (VBuiltinFunction
-                            (\b ->
-                                case b of
-                                    VInt y ->
-                                        Ok (VInt (op x y))
-
-                                    _ ->
-                                        Err (TypeError "Expected Int")
-                            )
-                        )
-
-                _ ->
-                    Err (TypeError "Expected Int")
-        )
-
-
-basicsEnv : Stage.Eval.Env
-basicsEnv =
-    Dict.fromList
-        [ ( "Basics.add", intBinOp (+) )
-        , ( "Basics.sub", intBinOp (-) )
-        , ( "Basics.mul", intBinOp (*) )
-        , ( "Basics.negate"
-          , VBuiltinFunction
-                (\v ->
-                    case v of
-                        VInt n ->
-                            Ok (VInt (negate n))
-
-                        _ ->
-                            Err (TypeError "Expected Int")
-                )
-          )
-        ]
-
-
 suite : Test
 suite =
     describe "Stage.Eval.ElmSyntax"
@@ -197,27 +150,89 @@ suite =
         , describe "Operators (with builtins)"
             [ test "evaluates addition" <|
                 \() ->
-                    evalStringWithEnv basicsEnv "1 + 2"
+                    evalString "1 + 2"
                         |> expectOk (VInt 3)
             , test "evaluates subtraction" <|
                 \() ->
-                    evalStringWithEnv basicsEnv "5 - 3"
+                    evalString "5 - 3"
                         |> expectOk (VInt 2)
             , test "evaluates multiplication" <|
                 \() ->
-                    evalStringWithEnv basicsEnv "3 * 4"
+                    evalString "3 * 4"
                         |> expectOk (VInt 12)
+            , test "evaluates integer division" <|
+                \() ->
+                    evalString "7 // 2"
+                        |> expectOk (VInt 3)
+            , test "evaluates float division" <|
+                \() ->
+                    evalString "3.0 / 2.0"
+                        |> expectOk (VFloat 1.5)
             , test "evaluates negation" <|
                 \() ->
-                    evalStringWithEnv basicsEnv "-42"
+                    evalString "-42"
                         |> expectOk (VInt -42)
             , test "evaluates pipe operator" <|
                 \() ->
-                    evalStringWithEnv basicsEnv "1 |> (\\x -> x)"
+                    evalString "1 |> (\\x -> x)"
                         |> expectOk (VInt 1)
             , test "evaluates reverse pipe operator" <|
                 \() ->
-                    evalStringWithEnv basicsEnv "(\\x -> x) <| 1"
+                    evalString "(\\x -> x) <| 1"
                         |> expectOk (VInt 1)
+            ]
+        , describe "Comparison operators"
+            [ test "evaluates ==" <|
+                \() ->
+                    evalString "1 == 1"
+                        |> expectOk (VBool True)
+            , test "evaluates == (false)" <|
+                \() ->
+                    evalString "1 == 2"
+                        |> expectOk (VBool False)
+            , test "evaluates /=" <|
+                \() ->
+                    evalString "1 /= 2"
+                        |> expectOk (VBool True)
+            , test "evaluates <" <|
+                \() ->
+                    evalString "1 < 2"
+                        |> expectOk (VBool True)
+            , test "evaluates >" <|
+                \() ->
+                    evalString "2 > 1"
+                        |> expectOk (VBool True)
+            , test "evaluates <=" <|
+                \() ->
+                    evalString "1 <= 1"
+                        |> expectOk (VBool True)
+            , test "evaluates >=" <|
+                \() ->
+                    evalString "1 >= 2"
+                        |> expectOk (VBool False)
+            ]
+        , describe "Boolean operators"
+            [ test "evaluates &&" <|
+                \() ->
+                    evalString "True && False"
+                        |> expectOk (VBool False)
+            , test "evaluates ||" <|
+                \() ->
+                    evalString "True || False"
+                        |> expectOk (VBool True)
+            , test "evaluates not" <|
+                \() ->
+                    evalString "Basics.not True"
+                        |> expectOk (VBool False)
+            ]
+        , describe "String and List operators"
+            [ test "evaluates string append" <|
+                \() ->
+                    evalString "\"hello\" ++ \" world\""
+                        |> expectOk (VString "hello world")
+            , test "evaluates list cons" <|
+                \() ->
+                    evalString "1 :: [2, 3]"
+                        |> expectOk (VList [ VInt 1, VInt 2, VInt 3 ])
             ]
         ]

@@ -18,13 +18,14 @@ import Elm.Syntax.Node as Node exposing (Node(..))
 import Elm.Syntax.Pattern as SynPat
 import List.NonEmpty
 import Stage.Eval exposing (Env, EvalError(..), Value, evalExpr)
+import Stage.Eval.Builtins
 
 
 {-| Evaluate an Elm expression string with an empty environment.
 -}
 evalString : String -> Result String Value
 evalString exprStr =
-    evalStringWithEnv Dict.empty exprStr
+    evalStringWithEnv Stage.Eval.Builtins.basicsEnv exprStr
 
 
 {-| Evaluate an Elm expression string with a custom environment (for builtins).

@@ -6,6 +6,7 @@ import Elm.Data.Located as Located
 import Elm.Data.Type as Type exposing (TypeOrId(..))
 import Expect exposing (Expectation)
 import Stage.Eval exposing (EvalError(..), Value(..), evalExpr)
+import Stage.Eval.Builtins exposing (basicsEnv)
 import Test exposing (Test, describe, test)
 
 
@@ -326,30 +327,6 @@ suite =
             [ test "1 + 2 via Basics.add in env" <|
                 \() ->
                     let
-                        addFn =
-                            VBuiltinFunction
-                                (\a ->
-                                    case a of
-                                        VInt x ->
-                                            Ok
-                                                (VBuiltinFunction
-                                                    (\b ->
-                                                        case b of
-                                                            VInt y ->
-                                                                Ok (VInt (x + y))
-
-                                                            _ ->
-                                                                Err (TypeError "Expected Int")
-                                                    )
-                                                )
-
-                                        _ ->
-                                            Err (TypeError "Expected Int")
-                                )
-
-                        env =
-                            Dict.singleton "Basics.add" addFn
-
                         -- Desugared form of 1 + 2:
                         -- Call (Call (Var Basics.add) 1) 2
                         expr =
@@ -389,7 +366,7 @@ suite =
                                 )
                     in
                     expr
-                        |> evalExpr env
+                        |> evalExpr basicsEnv
                         |> expectOk (VInt 3)
             ]
         ]
