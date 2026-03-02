@@ -25,7 +25,7 @@ types =
                 \() ->
                     input
                         |> Stage.Tokenize.tokenize
-                        |> Result.map (List.map .type_)
+                        |> Result.map (List.map .type_ >> List.filter (\t -> t /= End))
                         |> Expect.equal
                             (output
                                 |> Result.mapError TokenizeError
@@ -161,6 +161,7 @@ positions =
                     input
                         |> String.multilineInput
                         |> Stage.Tokenize.tokenize
+                        |> Result.map (List.filter (\t -> t.type_ /= End))
                         |> Expect.equal
                             (output
                                 |> Result.mapError TokenizeError

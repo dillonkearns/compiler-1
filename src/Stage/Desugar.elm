@@ -116,11 +116,6 @@ desugarExpr modules thisModule locatedExpr =
         Frontend.Argument varName ->
             return <| Canonical.Argument varName
 
-        Frontend.BinOp op e1 e2 ->
-            map2 (Canonical.BinOp op)
-                (f e1)
-                (f e2)
-
         Frontend.Lambda { arguments, body } ->
             f body
                 |> Result.map (curryLambda locatedExpr arguments)
@@ -242,6 +237,12 @@ desugarExpr modules thisModule locatedExpr =
                             , name = rec.name
                             }
                     )
+
+        Frontend.Operator _ ->
+            Debug.todo "Operator should have been resolved before desugaring"
+
+        Frontend.AmbiguousApplication _ ->
+            Debug.todo "AmbiguousApplication should have been resolved before desugaring"
 
 
 desugarPattern :
@@ -487,6 +488,9 @@ desugarTypeAnnotationQualifiedness modules thisModule decl =
         Port _ ->
             default
 
+        InfixOperator _ ->
+            default
+
 
 {-| Check the var name in the type annotation is the same as the one in the declaration:
 
@@ -541,6 +545,13 @@ checkAndDropTypeAnnotationName decl =
                 , body = Port type_
                 }
 
+        InfixOperator r ->
+            Ok
+                { module_ = decl.module_
+                , name = decl.name
+                , body = InfixOperator r
+                }
+
 
 throwAwayTypeAnnotationName :
     Declaration a TypeAnnotation b
@@ -564,6 +575,9 @@ throwAwayTypeAnnotationName decl =
 
             Port type_ ->
                 Port type_
+
+            InfixOperator r ->
+                InfixOperator r
     }
 
 

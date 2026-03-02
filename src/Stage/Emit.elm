@@ -475,9 +475,6 @@ findDependenciesOfExpr modules locatedExpr =
         String _ ->
             Ok []
 
-        Bool _ ->
-            Ok []
-
         Var ({ module_, name } as var) ->
             modules
                 |> Dict.get module_

@@ -10,6 +10,7 @@ import Elm.Data.Exposing as Exposing
 import Elm.Data.Import exposing (Import)
 import Elm.Data.Located as Located
 import Elm.Data.Module as Module exposing (Module)
+import List.NonEmpty
 import Elm.Data.ModuleName exposing (ModuleName)
 import Elm.Data.Qualifiedness exposing (PossiblyQualified(..))
 import Elm.Data.TypeAnnotation exposing (TypeAnnotation)
@@ -23,7 +24,7 @@ import TestHelpers exposing (located)
 desugarTest : Test
 desugarTest =
     describe "Stage.Desugar"
-        [ test "desugar \\a b -> a + b into \\a -> \\b -> a + b " <|
+        [ test "desugar \\a b -> a into \\a -> \\b -> a (currying)" <|
             \_ ->
                 frontendLambda "a" "b"
                     |> Desugar.desugarExpr Dict.empty (moduleFromName "A")
@@ -158,22 +159,18 @@ desugarTest =
         ]
 
 
-{-| `frontendLambda "a" "b"` builds `\a b -> a + b`.
+{-| `frontendLambda "a" "b"` builds `\a b -> a`.
 -}
 frontendLambda : String -> String -> Frontend.LocatedExpr
 frontendLambda arg1 arg2 =
     located <|
         Frontend.Lambda
-            { arguments = [ arg1, arg2 ]
-            , body =
-                located <|
-                    Frontend.Plus
-                        (located <| Frontend.Argument arg1)
-                        (located <| Frontend.Argument arg2)
+            { arguments = ( arg1, [ arg2 ] )
+            , body = located <| Frontend.Argument arg1
             }
 
 
-{-| `canonicalLambda "a" "b"` builds `\a -> \b -> a + b`.
+{-| `canonicalLambda "a" "b"` builds `\a -> \b -> a`.
 -}
 canonicalLambda : String -> String -> CanonicalU.Expr
 canonicalLambda arg1 arg2 =
@@ -182,10 +179,7 @@ canonicalLambda arg1 arg2 =
         , body =
             CanonicalU.Lambda
                 { argument = arg2
-                , body =
-                    CanonicalU.Plus
-                        (CanonicalU.Argument arg1)
-                        (CanonicalU.Argument arg2)
+                , body = CanonicalU.Argument arg1
                 }
         }
 
@@ -264,7 +258,7 @@ importFromName moduleName =
 exposingValuesInImport : List VarName -> ( ModuleName, Import ) -> ( ModuleName, Import )
 exposingValuesInImport vars ( moduleName, import_ ) =
     ( moduleName
-    , { import_ | exposing_ = Just <| Exposing.ExposingSome <| List.map Exposing.ExposedValue vars }
+    , { import_ | exposing_ = Just <| Exposing.ExposingSome <| listToNonEmpty (List.map Exposing.ExposedValue vars) }
     )
 
 
@@ -280,7 +274,7 @@ moduleFromName name =
     , filePath = "/"
     , declarations = Dict.empty
     , type_ = Module.PlainModule
-    , exposing_ = Exposing.ExposingSome []
+    , exposing_ = Exposing.ExposingAll
     }
 
 
@@ -324,7 +318,7 @@ addDeclarations varNames module_ =
 
 exposingValuesInModule : List VarName -> Module expr ann qual -> Module expr ann qual
 exposingValuesInModule varNames exposable =
-    { exposable | exposing_ = Exposing.ExposingSome (List.map Exposing.ExposedValue varNames) }
+    { exposable | exposing_ = Exposing.ExposingSome (listToNonEmpty (List.map Exposing.ExposedValue varNames)) }
 
 
 
@@ -344,3 +338,13 @@ addImports imports module_ =
 mapUnwrap : Result x Canonical.LocatedExpr -> Result x CanonicalU.Expr
 mapUnwrap =
     Result.map Canonical.unwrap
+
+
+listToNonEmpty : List a -> List.NonEmpty.NonEmpty a
+listToNonEmpty list =
+    case list of
+        x :: xs ->
+            ( x, xs )
+
+        [] ->
+            Debug.todo "listToNonEmpty: empty list"

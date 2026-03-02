@@ -68,7 +68,15 @@ typedInt int =
 typedBool : Bool -> Typed.LocatedExpr
 typedBool bool =
     located
-        ( Bool bool
+        ( ConstructorValue
+            { module_ = "Basics"
+            , name =
+                if bool then
+                    "True"
+
+                else
+                    "False"
+            }
         , Type Type.Bool
         )
 

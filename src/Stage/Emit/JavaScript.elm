@@ -62,21 +62,11 @@ emitExpr located =
         String string ->
             "\"" ++ string ++ "\""
 
-        Bool bool ->
-            if bool then
-                "true"
-
-            else
-                "false"
-
         Var var ->
             mangleQualifiedVar var
 
         Argument argument ->
             mangleVarName argument
-
-        BinOp op e1 e2 ->
-            "(" ++ emitExpr e1 ++ " " ++ op ++ " " ++ emitExpr e2 ++ ")"
 
         Lambda { argument, body } ->
             -- TODO are these parentheses needed?
@@ -154,4 +144,7 @@ emitDeclaration { module_, name, body } =
 
         Port _ ->
             -- TODO somehow emit ports!
+            ""
+
+        InfixOperator _ ->
             ""

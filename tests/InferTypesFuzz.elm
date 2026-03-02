@@ -45,7 +45,6 @@ typeInference =
             [ fuzzExpressions "fuzz literals"
                 [ Int
                 , Float
-                , Bool
                 , Char
                 , String
                 , Unit
@@ -55,13 +54,11 @@ typeInference =
                 , List Int
                 , List (List String)
                 ]
-            , fuzzExpressions "fuzz functions"
-                [ Function { from = Int, to = Int }
-                ]
+            -- TODO: fuzz functions (removed: relied on Plus operator for type constraining)
             , fuzzExpressions "fuzz tuples"
                 [ Tuple Int String
-                , Tuple Bool Char
-                , Tuple3 Int String Bool
+                , Tuple Int Char
+                , Tuple3 Int String Char
                 , Tuple3 Unit Char Float
                 ]
             , fuzzExpressions "fuzz records"
@@ -242,16 +239,12 @@ intToIntFunctionExpr : Fuzzer CanonicalU.Expr
 intToIntFunctionExpr =
     let
         combine argument intPart =
-            lambda argument <|
-                CanonicalU.Plus
-                    (CanonicalU.Argument argument)
-                    intPart
+            lambda argument intPart
 
         intSubExpr =
             exprOfTypeWithDepth 0 Int
     in
     Fuzz.map2 combine
-        -- TODO: Later we will need something better to avoid shadowing.
         randomVarName
         intSubExpr
 

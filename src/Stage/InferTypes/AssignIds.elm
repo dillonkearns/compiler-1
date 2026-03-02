@@ -98,7 +98,17 @@ assignIdsHelp currentId located =
             assignId currentId (Typed.String string)
 
         Canonical.Bool bool ->
-            assignId currentId (Typed.Bool bool)
+            assignId currentId
+                (Typed.ConstructorValue
+                    { module_ = "Basics"
+                    , name =
+                        if bool then
+                            "True"
+
+                        else
+                            "False"
+                    }
+                )
 
         -- We remember argument's IDs so that we can later use them in Lambda
         Canonical.Argument name ->

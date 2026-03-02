@@ -94,13 +94,6 @@ generateLocalEquations currentId env located =
             , [ equals type_ (Type String) ]
             )
 
-        Typed.Bool _ ->
-            -- bool is a bool
-            ( currentId
-            , env
-            , [ equals type_ (Type Bool) ]
-            )
-
         Typed.Argument _ ->
             -- TODO we need to make sure argument usages use their inferred (from function) types
             ( currentId
@@ -119,23 +112,6 @@ generateLocalEquations currentId env located =
             ( currentId
             , env |> Env.add name type_
             , []
-            )
-
-        Typed.BinOp op left right ->
-            let
-                ( id1, env1, leftEquations ) =
-                    generateLocalEquations currentId env left
-
-                ( id2, env2, rightEquations ) =
-                    generateLocalEquations id1 env1 right
-            in
-            ( id2
-            , env2
-            , [-- TODO the operator should be linked to its definition
-               -- TODO the binop is a function: left -> right -> result
-              ]
-                ++ leftEquations
-                ++ rightEquations
             )
 
         Typed.Lambda { body, argument } ->

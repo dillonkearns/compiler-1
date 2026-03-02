@@ -46,8 +46,8 @@ typeInference =
               , Ok (List (Id 1))
               )
             , ( "one item"
-              , CanonicalU.List [ CanonicalU.Bool True ]
-              , Ok (List (Type Bool))
+              , CanonicalU.List [ CanonicalU.Char 'a' ]
+              , Ok (List (Type Char))
               )
             , ( "more items"
               , CanonicalU.List
@@ -66,11 +66,11 @@ typeInference =
               )
             , ( "more items with different types"
               , CanonicalU.List
-                    [ CanonicalU.Bool True
+                    [ CanonicalU.Char 'a'
                     , CanonicalU.String "two"
                     , CanonicalU.Int 3
                     ]
-              , Err (TypeMismatch (Type Bool) (Type String))
+              , Err (TypeMismatch (Type Char) (Type String))
               )
             , ( "List of List of Int"
               , CanonicalU.List
@@ -82,9 +82,9 @@ typeInference =
             , ( "List of List of different types"
               , CanonicalU.List
                     [ CanonicalU.List [ CanonicalU.Int 1 ]
-                    , CanonicalU.List [ CanonicalU.Bool False ]
+                    , CanonicalU.List [ CanonicalU.Char 'a' ]
                     ]
-              , Err (TypeMismatch (Type Int) (Type Bool))
+              , Err (TypeMismatch (Type Int) (Type Char))
               )
             ]
         , runSection "tuple"
@@ -96,9 +96,9 @@ typeInference =
               )
             , ( "items of different types"
               , CanonicalU.Tuple
-                    (CanonicalU.Bool True)
+                    (CanonicalU.Char 'a')
                     (CanonicalU.Int 1)
-              , Ok (Tuple (Type Bool) (Type Int))
+              , Ok (Tuple (Type Char) (Type Int))
               )
             ]
         , runSection "tuple3"
@@ -111,63 +111,10 @@ typeInference =
               )
             , ( "different types"
               , CanonicalU.Tuple3
-                    (CanonicalU.Bool True)
+                    (CanonicalU.Float 1.5)
                     (CanonicalU.Int 1)
                     (CanonicalU.Char 'h')
-              , Ok (Tuple3 (Type Bool) (Type Int) (Type Char))
-              )
-            ]
-        , runSection "plus"
-            [ ( "same types"
-              , CanonicalU.Plus
-                    (CanonicalU.Var { module_ = "Main", name = "age" })
-                    (CanonicalU.Int 1)
-              , Ok Int
-              )
-            ]
-        , runSection "cons"
-            [ ( "simple case"
-              , CanonicalU.Cons
-                    (CanonicalU.Int 1)
-                    (CanonicalU.List [])
-              , Ok (List (Type Int))
-              )
-            , ( "advanced case"
-              , CanonicalU.Cons
-                    (CanonicalU.Int 1)
-                    (CanonicalU.Cons
-                        (CanonicalU.Int 2)
-                        (CanonicalU.List
-                            [ CanonicalU.Int 3
-                            , CanonicalU.Int 4
-                            ]
-                        )
-                    )
-              , Ok (List (Type Int))
-              )
-            , ( "fail with wrong argument types"
-              , CanonicalU.Cons
-                    (CanonicalU.List
-                        [ CanonicalU.Int 1
-                        , CanonicalU.Int 2
-                        ]
-                    )
-                    (CanonicalU.List
-                        [ CanonicalU.Int 3
-                        , CanonicalU.Int 4
-                        ]
-                    )
-              , Err
-                    (TypeMismatch
-                        (Type (List (Type Int)))
-                        (Type Int)
-                    )
-              )
-            , ( "variable and list"
-              , CanonicalU.Cons
-                    (CanonicalU.Var { module_ = "Main", name = "age" })
-                    (CanonicalU.List [ CanonicalU.Int 1 ])
-              , Ok (List (Type Int))
+              , Ok (Tuple3 (Type Float) (Type Int) (Type Char))
               )
             ]
         , runSection "record"

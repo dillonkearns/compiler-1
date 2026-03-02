@@ -285,6 +285,9 @@ unifyWithTypeAnnotation aliases unusedId env substitutionMap decl =
         Port _ ->
             default
 
+        InfixOperator _ ->
+            default
+
 
 throwAwayType : Declaration a (ConcreteType Qualified) b -> Declaration a Never b
 throwAwayType decl =
@@ -312,4 +315,7 @@ throwAwayType decl =
 
             Port type_ ->
                 Port type_
+
+            InfixOperator r ->
+                InfixOperator r
     }

@@ -31,28 +31,9 @@ optimizeExprWith optimizations locatedExpr =
 
 defaultOptimizations : List ( String, Typed.LocatedExpr -> Maybe Typed.LocatedExpr )
 defaultOptimizations =
-    [ ( "plus", optimizePlus )
-    , ( "cons", optimizeCons )
+    [ ( "cons", optimizeCons )
     , ( "if-literal-bool", optimizeIfLiteralBool )
     ]
-
-
-optimizePlus : Typed.LocatedExpr -> Maybe Typed.LocatedExpr
-optimizePlus located =
-    case Typed.getExpr located of
-        Typed.BinOp "+" l r ->
-            case ( Typed.getExpr l, Typed.getExpr r ) of
-                ( Typed.Int left, Typed.Int right ) ->
-                    Just (Typed.setExpr (Typed.Int (left + right)) r)
-
-                ( Typed.Float left, Typed.Float right ) ->
-                    Just (Typed.setExpr (Typed.Float (left + right)) r)
-
-                _ ->
-                    Nothing
-
-        _ ->
-            Nothing
 
 
 optimizeCons : Typed.LocatedExpr -> Maybe Typed.LocatedExpr

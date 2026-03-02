@@ -72,21 +72,11 @@ emitExpr located =
         String string ->
             encode "string" [ ( "value", Encode.string string ) ]
 
-        Bool bool ->
-            encode "bool" [ ( "value", Encode.bool bool ) ]
-
         Var var ->
             encode "var" [ ( "name", Encode.string (mangleQualifiedVar var) ) ]
 
         Argument argument ->
             encode "arg" [ ( "name", Encode.string argument ) ]
-
-        BinOp op e1 e2 ->
-            encode "binop"
-                [ ( "op", Encode.string op )
-                , ( "e1", emitExpr e1 )
-                , ( "e2", emitExpr e2 )
-                ]
 
         Lambda { argument, body } ->
             encode "lambda"
@@ -180,4 +170,7 @@ emitDeclaration { module_, name, body } =
 
         Port _ ->
             -- TODO maybe there's a reasonable way to use ports with the Truffle?
+            Encode.string ""
+
+        InfixOperator _ ->
             Encode.string ""

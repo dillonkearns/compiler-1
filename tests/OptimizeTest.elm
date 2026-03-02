@@ -27,55 +27,26 @@ optimize =
                             |> Expect.equal output
           in
           describe "optimizeExpr"
-            [ describe "optimizePlus"
-                (List.map runTest
-                    [ ( "works with two literal ints"
-                      , located
-                            ( Plus
-                                (typedInt 2)
-                                (typedInt 5)
-                            , Type Type.Int
-                            )
-                      , typedInt 7
-                      )
-                    , ( "doesn't work if left is not int"
-                      , located
-                            ( Plus
-                                (located ( Argument "x", Type Type.Int ))
-                                (typedInt 5)
-                            , Type Type.Int
-                            )
-                      , located
-                            ( Plus
-                                (located ( Argument "x", Type Type.Int ))
-                                (typedInt 5)
-                            , Type Type.Int
-                            )
-                      )
-                    , ( "doesn't work if right is not int"
-                      , located
-                            ( Plus
-                                (typedInt 5)
-                                (located ( Argument "x", Type Type.Int ))
-                            , Type Type.Int
-                            )
-                      , located
-                            ( Plus
-                                (typedInt 5)
-                                (located ( Argument "x", Type Type.Int ))
-                            , Type Type.Int
-                            )
-                      )
-                    ]
-                )
-            , describe "optimizeCons"
+            [ describe "optimizeCons"
                 (List.map runTest
                     [ ( "works with one value"
                       , located
-                            ( Cons
-                                (typedInt 1)
-                                (typedIntList [ 2, 3 ])
-                            , Type Type.Int
+                            ( Call
+                                { fn =
+                                    located
+                                        ( Call
+                                            { fn =
+                                                located
+                                                    ( Var { module_ = "List", name = "cons" }
+                                                    , Type Type.Int
+                                                    )
+                                            , argument = typedInt 1
+                                            }
+                                        , Type Type.Int
+                                        )
+                                , argument = typedIntList [ 2, 3 ]
+                                }
+                            , Type (Type.List (Type Type.Int))
                             )
                       , typedIntList [ 1, 2, 3 ]
                       )

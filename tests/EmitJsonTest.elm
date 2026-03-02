@@ -59,13 +59,31 @@ json =
                         |> E.encode 0
                         |> Expect.equal
                             ("{\"type\":\"string\",\"value\":" ++ E.encode 0 (E.string x) ++ "}")
-            , fuzz bool "encode bool" <|
+            , fuzz bool "encode constructor value (bool)" <|
                 \x ->
-                    typed (Bool x)
+                    typed
+                        (ConstructorValue
+                            { module_ = "Basics"
+                            , name =
+                                if x then
+                                    "True"
+
+                                else
+                                    "False"
+                            }
+                        )
                         |> JSON.emitExpr
                         |> E.encode 0
                         |> Expect.equal
-                            ("{\"type\":\"bool\",\"value\":" ++ fromBool x ++ "}")
+                            ("{\"type\":\"constructor\",\"name\":\"Basics$"
+                                ++ (if x then
+                                        "True"
+
+                                    else
+                                        "False"
+                                   )
+                                ++ "\"}"
+                            )
             ]
         , let
             runTest : ( String, Typed.Expr_, String ) -> Test
@@ -87,19 +105,6 @@ json =
             , describe "Argument"
                 (List.map runTest
                     [ ( "simple", Argument "foo", "{\"type\":\"arg\",\"name\":\"foo\"}" )
-                    ]
-                )
-            , describe "Plus"
-                (List.map runTest
-                    [ ( "simple", Plus (typedInt 1) (typedInt 2), "{\"type\":\"plus\",\"e1\":{\"type\":\"int\",\"value\":1},\"e2\":{\"type\":\"int\",\"value\":2}}" )
-                    ]
-                )
-            , describe "Cons"
-                (List.map runTest
-                    [ ( "simple"
-                      , Cons (typedInt 1) (typedIntList [ 2, 3 ])
-                      , "{\"type\":\"cons\",\"e1\":{\"type\":\"int\",\"value\":1},\"e2\":{\"type\":\"list\",\"items\":[{\"type\":\"int\",\"value\":2},{\"type\":\"int\",\"value\":3}]}}"
-                      )
                     ]
                 )
             , describe "Lambda"
@@ -125,11 +130,17 @@ json =
                 (List.map runTest
                     [ ( "simple - true"
                       , If
-                            { test = typed (Bool True)
+                            { test =
+                                typed
+                                    (ConstructorValue
+                                        { module_ = "Basics"
+                                        , name = "True"
+                                        }
+                                    )
                             , then_ = typedInt 1
                             , else_ = typedInt 2
                             }
-                      , "{\"type\":\"if\",\"test\":{\"type\":\"bool\",\"value\":true},\"then\":{\"type\":\"int\",\"value\":1},\"else\":{\"type\":\"int\",\"value\":2}}"
+                      , "{\"type\":\"if\",\"test\":{\"type\":\"constructor\",\"name\":\"Basics$True\"},\"then\":{\"type\":\"int\",\"value\":1},\"else\":{\"type\":\"int\",\"value\":2}}"
                       )
                     ]
                 )

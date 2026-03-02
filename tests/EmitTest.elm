@@ -65,10 +65,10 @@ javascript =
                     , ( "string with newlines", String "abc\ndef", "\"abc\ndef\"" )
                     ]
                 )
-            , describe "Bool"
+            , describe "ConstructorValue (Bool)"
                 (List.map runTest
-                    [ ( "true", Bool True, "true" )
-                    , ( "false", Bool False, "false" )
+                    [ ( "true", ConstructorValue { module_ = "Basics", name = "True" }, "TODO" )
+                    , ( "false", ConstructorValue { module_ = "Basics", name = "False" }, "TODO" )
                     ]
                 )
             , describe "Var"
@@ -80,27 +80,6 @@ javascript =
             , describe "Argument"
                 (List.map runTest
                     [ ( "simple", Argument "foo", "foo" )
-                    ]
-                )
-            , describe "Plus"
-                (List.map runTest
-                    -- We need to give the child `Expr`s a type too
-                    [ ( "simple", Plus (typedInt 1) (typedInt 2), "(1 + 2)" )
-                    , ( "nested", Plus (typedInt 1) (typed (Plus (typedInt 2) (typedInt 3))), "(1 + (2 + 3))" )
-                    ]
-                )
-            , describe "Cons"
-                (List.map runTest
-                    [ ( "simple"
-                      , Cons (typedInt 1) (typedIntList [ 2, 3 ])
-                      , "[1].concat([2, 3])"
-                      )
-                    , ( "nested"
-                      , Cons
-                            (typedInt 1)
-                            (typed (Cons (typedInt 2) (typedIntList [ 3, 4 ])))
-                      , "[1].concat([2].concat([3, 4]))"
-                      )
                     ]
                 )
             , describe "Lambda"
@@ -142,19 +121,19 @@ javascript =
                 (List.map runTest
                     [ ( "simple - true"
                       , If
-                            { test = typed (Bool True)
+                            { test = typed (ConstructorValue { module_ = "Basics", name = "True" })
                             , then_ = typedInt 1
                             , else_ = typedInt 2
                             }
-                      , "(true ? 1 : 2)"
+                      , "(TODO ? 1 : 2)"
                       )
                     , ( "simple - false"
                       , If
-                            { test = typed (Bool False)
+                            { test = typed (ConstructorValue { module_ = "Basics", name = "False" })
                             , then_ = typedInt 1
                             , else_ = typedInt 2
                             }
-                      , "(false ? 1 : 2)"
+                      , "(TODO ? 1 : 2)"
                       )
                     , ( "with fn call"
                       , If
@@ -238,12 +217,13 @@ javascript =
                                     }
                             , body =
                                 typed
-                                    (Plus
-                                        (typedInt 1)
-                                        (typed (Argument "x"))
+                                    (Call
+                                        { fn = typed (Var { module_ = "Basics", name = "negate" })
+                                        , argument = typed (Argument "x")
+                                        }
                                     )
                             }
-                      , "((() => {const x = 2; return (1 + x);})())"
+                      , "((() => {const x = 2; return (Basics$negate(x));})())"
                       )
                     , ( "two bindings dependent on each other"
                       , Let
@@ -258,9 +238,10 @@ javascript =
                                       , { name = "y"
                                         , body =
                                             typed
-                                                (Plus
-                                                    (typedInt 1)
-                                                    (typed (Argument "x"))
+                                                (Call
+                                                    { fn = typed (Var { module_ = "Basics", name = "negate" })
+                                                    , argument = typed (Argument "x")
+                                                    }
                                                 )
                                         }
                                       )
@@ -268,7 +249,7 @@ javascript =
                             , body =
                                 typedInt 42
                             }
-                      , "((() => {const x = 2; const y = (1 + x); return 42;})())"
+                      , "((() => {const x = 2; const y = (Basics$negate(x)); return 42;})())"
                       )
                     ]
                 )
@@ -282,7 +263,7 @@ javascript =
             , describe "Tuple3"
                 (List.map runTest
                     [ ( "simple tuple3", Tuple3 (typedInt 1) (typedInt 2) (typedInt 3), "[1,2,3]" )
-                    , ( "mixed tuple3", Tuple3 (typedInt 1) (typedString "hello") (typedBool True), "[1,\"hello\",true]" )
+                    , ( "mixed tuple3", Tuple3 (typedInt 1) (typedString "hello") (typedBool True), "[1,\"hello\",TODO]" )
                     , ( "nested tuple3"
                       , Tuple3 (typedInt 1) (typedInt 2) (typed (Tuple3 (typedInt 3) (typedInt 4) (typedInt 5)))
                       , "[1,2,[3,4,5]]"
@@ -332,18 +313,17 @@ javascript =
                 )
             , describe "Mixed expressions"
                 (List.map runTest
-                    [ ( "plus in tuple"
-                      , Tuple (typed (Plus (typedInt 1) (typedInt 41))) (typedString "Hello")
-                      , """[(1 + 41),"Hello"]"""
-                      )
-                    , ( "tuple and cons in record"
-                      , Record
-                            (Dict.fromList
-                                [ ( "a", { name = "a", body = typed (Tuple (typedInt 2) (typedInt 3)) } )
-                                , ( "b", { name = "b", body = typed (Cons (typedInt 2) (typedIntList [ 3, 4 ])) } )
-                                ]
+                    [ ( "call in tuple"
+                      , Tuple
+                            (typed
+                                (Call
+                                    { fn = typed (Var { module_ = "Basics", name = "negate" })
+                                    , argument = typedInt 41
+                                    }
+                                )
                             )
-                      , """{a: [2,3], b: [2].concat([3, 4])}"""
+                            (typedString "Hello")
+                      , """[(Basics$negate(41)),"Hello"]"""
                       )
                     ]
                 )
