@@ -225,6 +225,40 @@ suite =
                     evalString "Basics.not True"
                         |> expectOk (VBool False)
             ]
+        , describe "Case expressions"
+            [ test "int literal match" <|
+                \() ->
+                    evalString "case 1 of\n  1 -> True\n  _ -> False"
+                        |> expectOk (VBool True)
+            , test "wildcard fallthrough" <|
+                \() ->
+                    evalString "case 2 of\n  1 -> True\n  _ -> False"
+                        |> expectOk (VBool False)
+            , test "var binding" <|
+                \() ->
+                    evalString "case 42 of\n  n -> n"
+                        |> expectOk (VInt 42)
+            , test "tuple destructuring" <|
+                \() ->
+                    evalString "case (1, 2) of\n  (a, b) -> b"
+                        |> expectOk (VInt 2)
+            , test "cons pattern" <|
+                \() ->
+                    evalString "case [1, 2, 3] of\n  x :: rest -> x\n  _ -> 0"
+                        |> expectOk (VInt 1)
+            , test "list pattern" <|
+                \() ->
+                    evalString "case [1, 2] of\n  [a, b] -> b\n  _ -> 0"
+                        |> expectOk (VInt 2)
+            , test "string match" <|
+                \() ->
+                    evalString "case \"hello\" of\n  \"hello\" -> True\n  _ -> False"
+                        |> expectOk (VBool True)
+            , test "record destructuring" <|
+                \() ->
+                    evalString "case { x = 1 } of\n  { x } -> x"
+                        |> expectOk (VInt 1)
+            ]
         , describe "String and List operators"
             [ test "evaluates string append" <|
                 \() ->

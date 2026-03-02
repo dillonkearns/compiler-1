@@ -14,7 +14,8 @@ Takes a `Typed.LocatedExpr` (already type-checked) and produces a runtime `Value
 -}
 
 import Dict exposing (Dict)
-import Elm.AST.Typed as Typed exposing (Expr_(..))
+import Elm.AST.Typed as Typed exposing (Expr_(..), Pattern_(..))
+import Elm.Data.Located as Located
 
 
 {-| Runtime environment mapping variable names to values.
@@ -166,8 +167,16 @@ evalExpr env locatedExpr =
                 Nothing ->
                     Err (VariableNotFound qualifiedName)
 
-        Case _ _ ->
-            Err (TypeError "Case expressions not yet supported")
+        Case testExpr branches ->
+            evalExpr env testExpr
+                |> Result.andThen
+                    (\value ->
+                        let
+                            ( first, rest ) =
+                                branches
+                        in
+                        matchBranches env value (first :: rest)
+                    )
 
 
 evalConstructor : String -> String -> Result EvalError Value
@@ -226,3 +235,147 @@ combineDict dict =
                     acc
             )
             (Ok Dict.empty)
+
+
+getPattern : Typed.LocatedPattern -> Typed.Pattern_
+getPattern locatedPattern =
+    locatedPattern |> Located.unwrap |> Tuple.first
+
+
+matchBranches : Env -> Value -> List { pattern : Typed.LocatedPattern, body : Typed.LocatedExpr } -> Result EvalError Value
+matchBranches env value branches =
+    case branches of
+        [] ->
+            Err (TypeError "No matching pattern in case expression")
+
+        branch :: rest ->
+            case matchPattern value (getPattern branch.pattern) of
+                Just bindings ->
+                    evalExpr (Dict.union bindings env) branch.body
+
+                Nothing ->
+                    matchBranches env value rest
+
+
+matchPattern : Value -> Typed.Pattern_ -> Maybe Env
+matchPattern value pattern =
+    case pattern of
+        PAnything ->
+            Just Dict.empty
+
+        PVar name ->
+            Just (Dict.singleton name value)
+
+        PUnit ->
+            case value of
+                VUnit ->
+                    Just Dict.empty
+
+                _ ->
+                    Nothing
+
+        PInt n ->
+            case value of
+                VInt m ->
+                    if n == m then
+                        Just Dict.empty
+
+                    else
+                        Nothing
+
+                _ ->
+                    Nothing
+
+        PFloat n ->
+            case value of
+                VFloat m ->
+                    if n == m then
+                        Just Dict.empty
+
+                    else
+                        Nothing
+
+                _ ->
+                    Nothing
+
+        PChar c ->
+            case value of
+                VChar d ->
+                    if c == d then
+                        Just Dict.empty
+
+                    else
+                        Nothing
+
+                _ ->
+                    Nothing
+
+        PString s ->
+            case value of
+                VString t ->
+                    if s == t then
+                        Just Dict.empty
+
+                    else
+                        Nothing
+
+                _ ->
+                    Nothing
+
+        PTuple p1 p2 ->
+            case value of
+                VTuple v1 v2 ->
+                    Maybe.map2 Dict.union
+                        (matchPattern v1 (getPattern p1))
+                        (matchPattern v2 (getPattern p2))
+
+                _ ->
+                    Nothing
+
+        PTuple3 p1 p2 p3 ->
+            case value of
+                VTuple3 v1 v2 v3 ->
+                    Maybe.map3 (\a b c -> Dict.union a (Dict.union b c))
+                        (matchPattern v1 (getPattern p1))
+                        (matchPattern v2 (getPattern p2))
+                        (matchPattern v3 (getPattern p3))
+
+                _ ->
+                    Nothing
+
+        PList pats ->
+            case value of
+                VList vals ->
+                    if List.length pats == List.length vals then
+                        List.map2 (\v p -> matchPattern v (getPattern p)) vals pats
+                            |> List.foldr (Maybe.map2 Dict.union) (Just Dict.empty)
+
+                    else
+                        Nothing
+
+                _ ->
+                    Nothing
+
+        PCons hPat tPat ->
+            case value of
+                VList (h :: t) ->
+                    Maybe.map2 Dict.union
+                        (matchPattern h (getPattern hPat))
+                        (matchPattern (VList t) (getPattern tPat))
+
+                _ ->
+                    Nothing
+
+        PRecord fields ->
+            case value of
+                VRecord dict ->
+                    fields
+                        |> List.map (\field -> Dict.get field dict |> Maybe.map (\v -> ( field, v )))
+                        |> List.foldr (Maybe.map2 (\( k, v ) acc -> Dict.insert k v acc)) (Just Dict.empty)
+
+                _ ->
+                    Nothing
+
+        PAlias innerPat name ->
+            matchPattern value (getPattern innerPat)
+                |> Maybe.map (Dict.insert name value)

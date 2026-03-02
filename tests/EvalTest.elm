@@ -1,7 +1,7 @@
 module EvalTest exposing (suite)
 
 import Dict
-import Elm.AST.Typed as Typed exposing (Expr_(..))
+import Elm.AST.Typed as Typed exposing (Expr_(..), Pattern_(..))
 import Elm.Data.Located as Located
 import Elm.Data.Type as Type exposing (TypeOrId(..))
 import Expect exposing (Expectation)
@@ -23,6 +23,11 @@ typedInt n =
 typedString : String -> Typed.LocatedExpr
 typedString s =
     located ( String s, Type Type.String )
+
+
+locatedPattern : Typed.Pattern -> Typed.LocatedPattern
+locatedPattern pat =
+    Located.located Located.dummyRegion pat
 
 
 {-| Compare Values via their string representation to avoid issues with
@@ -319,6 +324,58 @@ suite =
                         , Type Type.Int
                         )
                         |> evalExpr (Dict.singleton "Main.x" (VInt 42))
+                        |> expectOk (VInt 42)
+            ]
+
+        -- Case expressions
+        , describe "Case expression"
+            [ test "case 1 of { 1 -> 10; _ -> 0 } evaluates to VInt 10" <|
+                \() ->
+                    located
+                        ( Case
+                            (typedInt 1)
+                            ( { pattern = locatedPattern ( PInt 1, Type Type.Int )
+                              , body = typedInt 10
+                              }
+                            , [ { pattern = locatedPattern ( PAnything, Type Type.Int )
+                                , body = typedInt 0
+                                }
+                              ]
+                            )
+                        , Type Type.Int
+                        )
+                        |> evalExpr Dict.empty
+                        |> expectOk (VInt 10)
+            , test "case 2 of { 1 -> 10; _ -> 0 } falls through to wildcard" <|
+                \() ->
+                    located
+                        ( Case
+                            (typedInt 2)
+                            ( { pattern = locatedPattern ( PInt 1, Type Type.Int )
+                              , body = typedInt 10
+                              }
+                            , [ { pattern = locatedPattern ( PAnything, Type Type.Int )
+                                , body = typedInt 0
+                                }
+                              ]
+                            )
+                        , Type Type.Int
+                        )
+                        |> evalExpr Dict.empty
+                        |> expectOk (VInt 0)
+            , test "case 42 of { n -> n } binds variable" <|
+                \() ->
+                    located
+                        ( Case
+                            (typedInt 42)
+                            ( { pattern = locatedPattern ( PVar "n", Type Type.Int )
+                              , body = located ( Argument "n", Type Type.Int )
+                              }
+                            , []
+                            )
+                        , Type Type.Int
+                        )
+                        |> evalExpr Dict.empty
                         |> expectOk (VInt 42)
             ]
 
