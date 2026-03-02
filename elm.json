@@ -50,6 +50,8 @@
     "test-dependencies": {
         "elm/random": "1.0.0 <= v < 2.0.0",
         "elm-community/random-extra": "3.1.0 <= v < 4.0.0",
-        "elm-explorations/test": "2.0.1 <= v < 3.0.0"
+        "elm-explorations/test": "2.0.1 <= v < 3.0.0",
+        "stil4m/elm-syntax": "7.3.2 <= v < 8.0.0",
+        "stil4m/structured-writer": "1.0.1 <= v < 2.0.0"
     }
 }
